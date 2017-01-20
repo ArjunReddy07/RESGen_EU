@@ -1,6 +1,7 @@
 # License: BSD_3_clause
 #
-# Copyright (c) 2015, Jan Emil Banning Iversen, Pierre Pinson, Igor Arduin
+# Copyright (c) 2016, Jakob W. Messner, Jan Emil Banning Iversen, 
+# Pierre Pinson, Igor Arduin
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,43 +36,43 @@
 
 ##INPUTS TO BE MODIFIED
 #Path where all .py files are stored
-folder_code = '.'
+folder_code = 'Code/'
 #Path to data
-folder_data = '../RE-Europe_dataset_package'
+folder_data = 'Data/'
 #Output path to store scenarios in csv
-folder_output = '../Results'
+folder_output = 'Results/'
 #Renewable type to be studied: 'wind' or 'solar'
-renewable_type = 'wind' #
-#Data type: 'COSMO' or 'ECMWF' (COSMO recommended)
-data_type = 'COSMO'
-#Countries to be studied - see in documentation for list of countries keywords
-countries = {'FRA'}
-#Mawimum number of locations (random selection among all selected countries)
-max_number_loc = 10
-#Number of lead times to be studied (up to 91)
-nbr_leadTimes = 10
+renewable_type = 'solar' #
+#Market type: 'intraday' or 'dayahead'
+market = 'intraday'
+#regions to be studied
+regions = ['SCE','SDGE','PG&E_VLY','PG&E_BAY']
 #Starting and ending time of training period ('YYYY-MM-DD HH:MM:SS')
-start_time = '2012-01-02 00:00:00'
-end_time = '2012-12-31 00:00:00' 
+start_time = '2022-01-01 01:00:00'
+end_time = '2022-07-01 00:00:00'
 #Starting and ending time of testing period - when scenarios will be generated ('YYYY-MM-DD HH:MM:SS')
-fore_start_time = '2014-09-01 00:00:00'
-fore_end_time = '2014-09-10 00:00:00'
+fore_start_time = '2022-07-19 00:00:00'
+fore_end_time = '2022-07-21 00:00:00'
 #Use of the improved forecast model (0:no - 1:yes) - only relevant for wind case
-improv_forecast = 1
+improv_forecast = 1 
+#Fitting of the covariance matrix through a combination of exponential and Cauchy estimations (0:no - 1:yes)
+gene_cov = 0  #TODO: no effect at the moment
 #Number of scenarios to be computed
-nb_scenarios = 50 
+nb_scenarios = 9
 
 
 ##CODE STRUCTURE - DON'T MODIFY IF ONLY USE
 import sys
 sys.path.insert(0, folder_code)
-from dataReader import dataReader
+from dataReaderUS import dataReaderUS
 from modelEstimation import modelEstimation
-from scenarioGeneration import scenarioGeneration, save_scenarios
+from scenarioGeneration import save_scenarios, save_scenarios_EPRI
 
-data = dataReader(countries,max_number_loc,renewable_type,data_type,start_time,
-                  end_time,fore_start_time,fore_end_time,nbr_leadTimes,folder_data)
-model = modelEstimation(data)
-scenarios = scenarioGeneration(model, data, improv_forecast, nb_scenarios)
-save_scenarios(scenarios, folder_output)
-    
+data = dataReaderUS(regions, market, renewable_type, start_time, end_time,
+  folder_data) 
+forec_data = dataReaderUS(regions, market, renewable_type, fore_start_time, 
+  fore_end_time, folder_data)             
+model = modelEstimation(data, gene_cov, improv_forecast)
+scenarios = model.scenarios(forec_data, nb_scenarios)
+
+save_scenarios_EPRI(scenarios, folder_output, IncludeReferenceScenario = True)
